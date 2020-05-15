@@ -63,6 +63,14 @@ class GameFragment : Fragment() {
             binding.scoreText.text = newWord.toString()
         })
 
+        viewModel.eventGameFinished.observe(this, Observer { isFinished->
+            if (isFinished)
+            {
+                gameFinished()
+                viewModel.onGameFinishComplete()
+            }
+        })
+
         binding.correctButton.setOnClickListener {
             viewModel.onCorrect()
             //After adding live data

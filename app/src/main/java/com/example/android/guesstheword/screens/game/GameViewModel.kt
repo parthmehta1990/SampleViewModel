@@ -5,34 +5,42 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class GameViewModel: ViewModel() {
+class GameViewModel : ViewModel() {
 
     // The current word
-    private var _word =MutableLiveData<String>()
+    private var _word = MutableLiveData<String>()
 
     val word: LiveData<String>
-        get()=_word
+        get() = _word
 
     // The current score
-     var _score = MutableLiveData<Int>()
+    private var _score = MutableLiveData<Int>()
 
-     val score: LiveData<Int>
-         get()=_score
+    val score: LiveData<Int>
+        get() = _score
+
+    // The current status
+    private var _eventGameFinished = MutableLiveData<Boolean>()
+
+    val eventGameFinished: LiveData<Boolean>
+        get() = _eventGameFinished
 
     // The list of words - the front of the list is the next word to guess
     private lateinit var wordList: MutableList<String>
 
     init {
-        Log.d("View Model","View Model in init")
+        Log.d("View Model", "View Model in init")
+
+        _eventGameFinished.value = false
         resetList()
         nextWord()
-        _score.value=0
+        _score.value = 0
     }
 
     override fun onCleared() {
         super.onCleared()
 
-        Log.d("View Model","View Model destroyed")
+        Log.d("View Model", "View Model destroyed")
     }
 
     private fun resetList() {
@@ -69,6 +77,8 @@ class GameViewModel: ViewModel() {
         //Select and remove a word from the list
         if (wordList.isEmpty()) {
             //gameFinished()
+
+            _eventGameFinished.value = true
         } else {
             _word.value = wordList.removeAt(0)
         }
@@ -78,13 +88,18 @@ class GameViewModel: ViewModel() {
 
     /** Methods for buttons presses **/
 
-     fun onSkip() {
-        _score.value=_score.value!!.minus(1)
+    fun onSkip() {
+        _score.value = _score.value!!.minus(1)
         nextWord()
     }
 
-     fun onCorrect() {
-         _score.value=_score.value!!.plus(1)
+    fun onCorrect() {
+        _score.value = _score.value!!.plus(1)
         nextWord()
+    }
+
+    fun onGameFinishComplete()
+    {
+        _eventGameFinished.value=false
     }
 }
