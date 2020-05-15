@@ -23,6 +23,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.NavHostFragment.findNavController
 import com.example.android.guesstheword.R
@@ -53,17 +54,26 @@ class GameFragment : Fragment() {
         Log.d("View Model", "View Model created")
         viewModel = ViewModelProviders.of(this).get(GameViewModel::class.java)
 
+        //Adding live data to updateUI
+        viewModel.score.observe(this, Observer { newScore ->
+            binding.scoreText.text = newScore.toString()
+        })
 
+        viewModel.word.observe(this, Observer { newWord ->
+            binding.scoreText.text = newWord.toString()
+        })
 
         binding.correctButton.setOnClickListener {
             viewModel.onCorrect()
-            updateScoreText()
-            updateWordText()
+            //After adding live data
+            //updateScoreText()
+           // updateWordText()
         }
         binding.skipButton.setOnClickListener {
             viewModel.onSkip()
-            updateScoreText()
-            updateWordText()
+            //After adding live data
+            //updateScoreText()
+            //updateWordText()
         }
         updateScoreText()
         updateWordText()
@@ -80,7 +90,8 @@ class GameFragment : Fragment() {
      * Called when the game is finished
      */
     private fun gameFinished() {
-        val action = GameFragmentDirections.actionGameToScore(viewModel.score)
+        val currentScore = viewModel.score.value ?: 0
+        val action = GameFragmentDirections.actionGameToScore(currentScore)
         findNavController(this).navigate(action)
     }
 
@@ -88,7 +99,7 @@ class GameFragment : Fragment() {
     /** Methods for updating the UI **/
 
     private fun updateWordText() {
-        binding.wordText.text = viewModel.word
+        binding.wordText.text = viewModel.word.toString()
 
     }
 
