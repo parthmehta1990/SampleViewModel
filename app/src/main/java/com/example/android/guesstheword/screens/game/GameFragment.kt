@@ -16,11 +16,14 @@
 
 package com.example.android.guesstheword.screens.game
 
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.getSystemService
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -34,11 +37,9 @@ import com.example.android.guesstheword.databinding.GameFragmentBinding
  */
 class GameFragment : Fragment() {
 
+    private lateinit var viewModel: GameViewModel
 
     private lateinit var binding: GameFragmentBinding
-
-    //creating viewmodel
-    lateinit var viewModel: GameViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -51,67 +52,52 @@ class GameFragment : Fragment() {
                 false
         )
 
-        Log.d("View Model", "View Model created")
+        // Get the viewmodel
         viewModel = ViewModelProviders.of(this).get(GameViewModel::class.java)
 
-        //Adding live data to updateUI
-        viewModel.score.observe(this, Observer { newScore ->
-            binding.scoreText.text = newScore.toString()
-        })
+        // Set the viewmodel for databinding - this allows the bound layout access to all of the
+        // data in the VieWModel
+        binding.gameViewModel = viewModel
 
-        viewModel.word.observe(this, Observer { newWord ->
-            binding.scoreText.text = newWord.toString()
-        })
+        // Specify the current activity as the lifecycle owner of the binding. This is used so that
+        // the binding can observe LiveData updates
+        binding.setLifecycleOwner(this)
 
-        viewModel.eventGameFinished.observe(this, Observer { isFinished->
-            if (isFinished)
-            {
-                gameFinished()
+        // Sets up event listening to navigate the player when the game is finished
+        viewModel.eventGameFinish.observe(this, Observer { isFinished ->
+            if (isFinished) {
+                val currentScore = viewModel.score.value ?: 0
+                val action = GameFragmentDirections.actionGameToScore(currentScore)
+                findNavController(this).navigate(action)
                 viewModel.onGameFinishComplete()
             }
         })
 
-        binding.correctButton.setOnClickListener {
-            viewModel.onCorrect()
-            //After adding live data
-            //updateScoreText()
-           // updateWordText()
-        }
-        binding.skipButton.setOnClickListener {
-            viewModel.onSkip()
-            //After adding live data
-            //updateScoreText()
-            //updateWordText()
-        }
-        updateScoreText()
-        updateWordText()
+        // Buzzes when triggered with different buzz events
+        viewModel.eventBuzz.observe(this, Observer { buzzType ->
+            if (buzzType != GameViewModel.BuzzType.NO_BUZZ) {
+                buzz(buzzType.pattern)
+                viewModel.onBuzzComplete()
+            }
+        })
+
         return binding.root
 
     }
 
     /**
-     * Resets the list of words and randomizes the order
+     * Given a pattern, this method makes sure the device buzzes
      */
-
-
-    /**
-     * Called when the game is finished
-     */
-    private fun gameFinished() {
-        val currentScore = viewModel.score.value ?: 0
-        val action = GameFragmentDirections.actionGameToScore(currentScore)
-        findNavController(this).navigate(action)
-    }
-
-
-    /** Methods for updating the UI **/
-
-    private fun updateWordText() {
-        binding.wordText.text = viewModel.word.toString()
-
-    }
-
-    private fun updateScoreText() {
-        binding.scoreText.text = viewModel.score.toString()
+    private fun buzz(pattern: LongArray) {
+        val buzzer = activity?.getSystemService<Vibrator>()
+        buzzer?.let {
+            // Vibrate for 500 milliseconds
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                buzzer.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            } else {
+                //deprecated in API 26
+                buzzer.vibrate(pattern, -1)
+            }
+        }
     }
 }
